@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --track-changes=all tech-test-plan.docx -o /tmp/tech-test-plan.md)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}
