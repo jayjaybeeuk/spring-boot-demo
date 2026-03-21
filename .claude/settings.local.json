@@ -3,7 +3,31 @@
     "allow": [
       "Bash(pandoc --track-changes=all tech-test-plan.docx -o /tmp/tech-test-plan.md)",
       "Read(//tmp/**)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(pdftotext /Users/jamesbolton/Documents/GIT/Personal/Allica-tech/tech-test-brief.pdf -)",
+      "Bash(gradle --version)",
+      "Bash(java --version)",
+      "Bash(docker --version)",
+      "Bash(curl -v \"https://start.spring.io/starter.zip?type=gradle-project-kotlin&language=kotlin&bootVersion=3.4.3&baseDir=backend&groupId=com.example&artifactId=customers&name=customers&packageName=com.example.customers&javaVersion=21&dependencies=web,data-jpa,h2,actuator,validation\" -o backend.zip)",
+      "Bash(curl -s \"https://start.spring.io/starter.zip?type=gradle-project-kotlin&language=kotlin&bootVersion=3.4.3&baseDir=backend&groupId=com.example&artifactId=customers&name=customers&packageName=com.example.customers&javaVersion=21&dependencies=web,data-jpa,h2,actuator,validation\")",
+      "Bash(curl -s \"https://start.spring.io/starter.zip?type=gradle-project-kotlin&language=kotlin&bootVersion=3.5.0&baseDir=backend&groupId=com.example&artifactId=customers&name=customers&packageName=com.example.customers&javaVersion=21&dependencies=web,data-jpa,h2,actuator,validation\" -o backend.zip)",
+      "Bash(unzip -q backend.zip)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init --yes --base-color neutral)",
+      "Bash(npx shadcn@latest init --yes)",
+      "Bash(pkill -f shadcn)",
+      "Bash(printf \"\\\\n\\\\n\")",
+      "Bash(npx shadcn@latest init)",
+      "Bash(npm run:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl -s http://localhost:8080/actuator/health)",
+      "Bash(curl -s http://localhost:8080/api/customers)",
+      "Bash(curl -s -X POST http://localhost:8080/api/customers -H \"Content-Type: application/json\" -d '{\"\"firstName\"\":\"\"James\"\",\"\"lastName\"\":\"\"Bolton\"\",\"\"dateOfBirth\"\":\"\"1990-01-15\"\"}')",
+      "Bash(docker run:*)",
+      "Bash(curl -s -X POST http://localhost:8080/api/customers -H \"Content-Type: application/json\" -d '{\"\"firstName\"\":\"\"\"\",\"\"lastName\"\":\"\"Smith\"\",\"\"dateOfBirth\"\":\"\"1990-01-15\"\"}')",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)"
     ]
   }
 }

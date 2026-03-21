@@ -564,3 +564,155 @@ Never hardcode these values in application code.
 - [ ] `README.md` covers prerequisites + how to run
 - [ ] `AI_USAGE.md` is accurate and honest
 - [ ] Git bundle created: `git bundle create james-bolton-tech-test.bundle --all`
+
+---
+
+## Docker Configuration
+
+### docker-compose.yml
+
+```yaml
+version: '3.9'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: customer-api
+    ports:
+      - '8080:8080'
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/actuator/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - customer-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8080
+    container_name: customer-ui
+    ports:
+      - '3000:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - customer-net
+
+networks:
+  customer-net:
+    driver: bridge
+```
+
+### Backend Dockerfile (multi-stage)
+
+```dockerfile
+# Stage 1 — Build
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /app
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts settings.gradle.kts .
+COPY src src
+RUN chmod +x gradlew && ./gradlew bootJar --no-daemon
+
+# Stage 2 — Runtime (lean JRE image)
+FROM eclipse-temurin:21-jre-alpine AS runtime
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+### Frontend Dockerfile (multi-stage)
+
+```dockerfile
+# Stage 1 — Build
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json .
+RUN npm ci
+COPY . .
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN npm run build
+
+# Stage 2 — Serve (minimal Nginx)
+FROM nginx:stable-alpine AS runtime
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### nginx.conf
+
+Handles SPA routing and proxies `/api` to the backend container — avoids browser CORS issues.
+
+```nginx
+server {
+    listen 80;
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html;
+        try_files $uri $uri/ /index.html;
+    }
+    location /api/ {
+        proxy_pass         http://backend:8080;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+    }
+}
+```
+
+---
+
+## Phased Implementation Plan
+
+Structured into four phases, each delivering working, testable output.
+
+| Phase | Scope | Time Est. | Deliverable |
+|-------|-------|-----------|-------------|
+| 1 — Scaffold | Repo structure, Gradle, Vite, Dockerfiles, Compose | 30 min | Running containers (empty app) |
+| 2 — Backend | Entity, repository, service, controller, validation, H2, tests | 60 min | Working REST API + tests |
+| 3 — Frontend | Types, API client, CustomerForm, CustomerList, styling | 60 min | Working UI end-to-end |
+| 4 — Polish | Error handling, loading states, FE tests, README, AI_USAGE.md | 45 min | Submission-ready bundle |
+
+### Phase 1 — Scaffold
+- Initialise git repository with `.gitignore` for Gradle and Node
+- Bootstrap Spring Boot via start.spring.io (Kotlin, Gradle, Web, Data JPA, H2, Actuator, Validation)
+- Bootstrap React/Vite: `npm create vite@latest frontend -- --template react-ts`
+- Write skeleton Dockerfiles and docker-compose.yml — verify both containers start
+
+### Phase 2 — Backend
+- Define `Customer` entity with `@Entity`, `@Id`, `@GeneratedValue`
+- Create `CustomerRepository` extending `JpaRepository<Customer, Long>`
+- Implement `CustomerService` with `create()` and `getAll()`
+- Expose `CustomerController` with POST and GET endpoints
+- Add Bean Validation (`@NotBlank`, `@NotNull`, `@Past`) and `@RestControllerAdvice` for 400 errors
+- Configure H2 console (dev profile only) and JPA in `application.yml`
+- Write integration tests with `@SpringBootTest` + MockMvc
+
+### Phase 3 — Frontend
+- Define `Customer` TypeScript interface in `src/types/customer.ts`
+- Implement `customerApi.ts` with typed Axios wrappers
+- Build `CustomerForm` with validation feedback via shadcn/ui `<Form>`
+- Build `CustomerList` + `CustomerRow` to display all customers
+- Wire React Query hooks — invalidate cache on successful POST
+- Apply Tailwind + shadcn/ui styling
+
+### Phase 4 — Polish & Submission
+- Add loading and error states to all components
+- Write Vitest + RTL unit tests for form and list
+- Finalise README.md and AI_USAGE.md
+- End-to-end smoke test via `docker compose up`
+- Create git bundle: `git bundle create james-bolton-tech-test.bundle --all`
