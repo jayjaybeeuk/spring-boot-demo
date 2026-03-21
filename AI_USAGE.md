@@ -6,14 +6,25 @@ This document records all AI tool usage during development of the Customer Manag
 
 ## Tools Used
 
-| Tool | Purpose |
-|------|---------|
-| GitHub Copilot | In-editor code completion and suggestions |
+| Tool                      | Purpose                                          |
+| ------------------------- | ------------------------------------------------ |
+| GitHub Copilot            | In-editor code completion and suggestions        |
 | Claude (Anthropic Cowork) | Planning, architecture design, and documentation |
 
 ---
 
 ## Usage Log
+
+### Docker / Nginx Proxy Fix
+
+**Tool:** Claude Code (Claude Sonnet 4.6)
+**Task delegated:** Diagnosing 403 errors on API calls in the Dockerised stack
+**What was generated:** Identified that `VITE_API_BASE_URL=http://localhost:8080` baked into the frontend build caused the browser to call the backend directly (port 8080), bypassing nginx and triggering CORS rejection. Generated updated `nginx.conf` (with Docker DNS resolver), `docker-compose.yml` (removed build arg), and `Dockerfile` (removed `ARG/ENV`).
+**What I wrote myself / manually fixed:** Identified the proxy pattern to use as the preferred solution; validated the nginx `resolver 127.0.0.11` approach and confirmed it resolved the host-not-found startup error. Directed the fix toward using relative URLs + nginx proxy rather than configuring CORS on the backend.
+**AI mistakes corrected:** Initial nginx config used a hard-coded `proxy_pass http://backend:8080` without a `resolver` directive, causing nginx to fail at startup with "host not found in upstream". I caught this and directed the correction.
+**Time estimate:** ~5 min with AI assistance vs ~20–30 min without (diagnosing Docker networking + nginx config).
+
+---
 
 ### Planning & Architecture
 
@@ -29,25 +40,26 @@ This document records all AI tool usage during development of the Customer Manag
 
 ## Time Breakdown
 
-| Phase | Estimated time (with AI) | Estimated time (without AI) |
-|-------|--------------------------|------------------------------|
-| Planning & architecture | 15 min | 45–60 min |
-| Backend scaffolding | TBD | TBD |
-| Backend logic & tests | TBD | TBD |
-| Frontend scaffolding | TBD | TBD |
-| Frontend components & tests | TBD | TBD |
-| README & documentation | TBD | TBD |
-| **Total** | TBD | TBD |
+| Phase                       | Estimated time (with AI) | Estimated time (without AI) |
+| --------------------------- | ------------------------ | --------------------------- |
+| Planning & architecture     | 15 min                   | 45–60 min                   |
+| Backend scaffolding         | 15 min                   | 60 min                      |
+| Backend logic & tests       | 10 min                   | 60 min                      |
+| Frontend scaffolding        | 10 min                   | 45 min                      |
+| Frontend components & tests | 5 min                    | 60 min                      |
+| README & documentation      | 20 min                   | 90 min                      |
+| **Total**                   | TBD                      | TBD                         |
 
-*This log will be updated as development progresses.*
+_This log will be updated as development progresses._
 
 ---
 
 ## Reflections on AI Impact
 
-> *To be completed on submission.*
+> _To be completed on submission._
 
 Areas to cover:
+
 - Where AI accelerated development most
 - Where AI suggestions needed correction or were not used
 - How AI affected code quality vs writing everything manually

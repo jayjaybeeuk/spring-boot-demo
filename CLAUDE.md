@@ -3,6 +3,8 @@
 Architecture and coding standards for the Allica Bank Senior+ Full Stack Technical Test.
 All decisions here supersede generic defaults. Read this before touching any file.
 
+> Agent orchestration: see [agents.md](agents.md)
+
 ---
 
 ## Project Overview
@@ -16,19 +18,20 @@ customer records. Frontend provides a form and list view. Everything runs via Do
 
 | Layer | Technology | Version |
 |---|---|---|
-| Backend language | Kotlin | 2.x (JVM 21) |
-| Backend framework | Spring Boot | 3.x |
+| Backend language | Kotlin | 1.9.x (JVM 21) |
+| Backend framework | Spring Boot | 3.5.x |
 | Database | H2 in-memory | 2.x (embedded, no separate container) |
 | ORM | Spring Data JPA | Bundled with Boot |
 | Build tool | Gradle Kotlin DSL | 8.x |
-| Backend linting | ktlint | Via Gradle plugin |
+| Backend linting | ktlint | 12.x plugin / 1.5.x engine |
 | Frontend | React + TypeScript | 19 / 5.x |
-| Frontend build | Vite | 5.x |
-| Component library | shadcn/ui | Latest (Tailwind + Radix UI) |
-| Styling | Tailwind CSS | v4 (bundled with shadcn/ui) |
+| Frontend build | Vite | 8.x |
+| Component library | shadcn/ui (manual) | Radix UI + Tailwind v4 |
+| Styling | Tailwind CSS | v4 (`@tailwindcss/vite` plugin) |
 | HTTP client | Axios | 1.x |
 | Server state | TanStack Query (React Query) | v5 |
-| Frontend testing | Vitest + React Testing Library | Latest |
+| Form validation | react-hook-form + zod | 7.x / 4.x |
+| Frontend testing | Vitest + React Testing Library | 4.x / 16.x |
 | API mocking | msw (Mock Service Worker) | v2 |
 | Containerisation | Docker + Compose | Latest stable |
 
@@ -37,11 +40,12 @@ customer records. Frontend provides a form and list view. Everything runs via Do
 ## Repository Structure
 
 ```
-customer-management/
+Allica-tech/
 ├── docker-compose.yml
 ├── README.md
 ├── AI_USAGE.md
 ├── CLAUDE.md                          ← this file
+├── agents.md                          ← agent orchestration notes
 │
 ├── backend/
 │   ├── Dockerfile
@@ -49,7 +53,7 @@ customer-management/
 │   ├── settings.gradle.kts
 │   └── src/
 │       ├── main/kotlin/com/example/customers/
-│       │   ├── CustomerApplication.kt
+│       │   ├── CustomersApplication.kt
 │       │   ├── config/
 │       │   │   └── CorsConfig.kt      ← dev-profile CORS only
 │       │   ├── domain/
@@ -67,24 +71,23 @@ customer-management/
 │       │   └── controller/
 │       │       └── CustomerController.kt
 │       └── test/kotlin/com/example/customers/
-│           ├── CustomerControllerTest.kt
-│           └── CustomerServiceTest.kt
+│           └── CustomerControllerTest.kt
 │
 └── frontend/
     ├── Dockerfile
     ├── nginx.conf
     ├── package.json
-    ├── vite.config.ts
-    ├── tsconfig.json
+    ├── vite.config.ts                 ← also holds Vitest config (use vitest/config)
+    ├── tsconfig.app.json              ← includes @/ path alias
     ├── components.json                ← shadcn/ui config
     └── src/
-        ├── main.tsx
+        ├── main.tsx                   ← QueryClientProvider wrapper
         ├── App.tsx
         ├── api/
-        │   ├── axios.ts               ← configured Axios instance
+        │   ├── axios.ts               ← configured Axios instance (relative baseURL)
         │   └── customerApi.ts         ← typed API functions
         ├── components/
-        │   ├── ui/                    ← shadcn/ui generated components (do not edit manually)
+        │   ├── ui/                    ← shadcn/ui components (owned code, edit freely)
         │   ├── CustomerForm.tsx
         │   ├── CustomerList.tsx
         │   └── CustomerRow.tsx
@@ -92,8 +95,17 @@ customer-management/
         │   └── useCustomers.ts        ← React Query hooks
         ├── types/
         │   └── customer.ts
-        └── lib/
-            └── utils.ts               ← shadcn/ui cn() utility (auto-generated)
+        ├── lib/
+        │   └── utils.ts               ← cn() utility
+        ├── mocks/
+        │   ├── handlers.ts            ← msw request handlers
+        │   └── server.ts              ← msw node server
+        └── test/
+            ├── setup.ts               ← msw lifecycle + jest-dom
+            ├── CustomerForm.test.tsx
+            ├── CustomerList.test.tsx
+            ├── customerApi.test.ts
+            └── ui.test.tsx
 ```
 
 ---
@@ -120,7 +132,7 @@ data class Customer(
     @field:NotNull @field:Past
     val dateOfBirth: LocalDate,
 
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
 )
 ```
 
@@ -129,20 +141,18 @@ data class Customer(
 Separate request and response objects. Never leak JPA entities to the API layer.
 
 ```kotlin
-// Request — validated at controller boundary
 data class CreateCustomerRequest(
     @field:NotBlank val firstName: String,
     @field:NotBlank val lastName: String,
-    @field:NotNull @field:Past val dateOfBirth: LocalDate
+    @field:NotNull @field:Past val dateOfBirth: LocalDate,
 )
 
-// Response — safe projection, no internal fields
 data class CustomerResponse(
     val id: Long,
     val firstName: String,
     val lastName: String,
     val dateOfBirth: LocalDate,
-    val createdAt: Instant
+    val createdAt: Instant,
 )
 ```
 
@@ -176,7 +186,7 @@ class CustomerController(private val customerService: CustomerService) {
 
 - Annotate with `@Service`
 - All persistence calls go through the repository, never direct EntityManager
-- Map entity → DTO in the service layer, not the controller
+- Map entity → DTO in the service layer using a private extension function
 
 ### Error Response Format
 
@@ -191,76 +201,22 @@ All validation and application errors use this exact envelope — no exceptions:
 }
 ```
 
-Implement via `@RestControllerAdvice`:
-
-```kotlin
-data class FieldError(val field: String, val message: String)
-data class ErrorResponse(val errors: List<FieldError>)
-
-@RestControllerAdvice
-class GlobalExceptionHandler {
-
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleValidation(ex: MethodArgumentNotValidException): ErrorResponse =
-        ErrorResponse(
-            errors = ex.bindingResult.fieldErrors.map {
-                FieldError(it.field, it.defaultMessage ?: "invalid")
-            }
-        )
-
-    @ExceptionHandler(NoSuchElementException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handleNotFound(ex: NoSuchElementException): ErrorResponse =
-        ErrorResponse(errors = listOf(FieldError("id", ex.message ?: "not found")))
-}
-```
-
-### application.yml
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:h2:mem:customers;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-  h2:
-    console:
-      enabled: false   # enabled only in dev profile
-
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  jpa:
-    show-sql: true
-```
+Implement via `@RestControllerAdvice` in `exception/GlobalExceptionHandler.kt`.
 
 ### ktlint
 
-Configure in `build.gradle.kts`:
-
 ```kotlin
+// build.gradle.kts
 plugins {
-    id("org.jlleitschuh.gradle.ktlint") version "12.x"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
-
 ktlint {
-    version.set("1.x")
+    version.set("1.5.0")
     android.set(false)
 }
 ```
 
-Run: `./gradlew ktlintCheck` — CI must pass before merge.
-Auto-fix: `./gradlew ktlintFormat`
+Run: `./gradlew ktlintCheck` / auto-fix: `./gradlew ktlintFormat`
 
 ---
 
@@ -268,185 +224,136 @@ Auto-fix: `./gradlew ktlintFormat`
 
 ### shadcn/ui Setup
 
-shadcn/ui components are **generated into `src/components/ui/`** — they are your code, not a
-node_module. Edit them freely for project-specific tweaks.
+shadcn/ui components live in `src/components/ui/` — they are owned code, edit freely.
 
-Initialise once:
-```bash
-npx shadcn@latest init
-# Choose: TypeScript, Tailwind CSS, src/ directory, @/ alias
-```
+**Note:** `npx shadcn@latest init` is interactive and cannot be scripted. Set up manually:
+1. Install deps: `tailwindcss @tailwindcss/vite class-variance-authority clsx tailwind-merge lucide-react @radix-ui/react-slot tw-animate-css`
+2. Create `components.json` with `"style": "default"`, `"tsx": true`, `"aliases.utils": "@/lib/utils"`
+3. Add `@import "tailwindcss"; @import "tw-animate-css";` to `index.css` with CSS variable theme tokens
+4. Use `@tailwindcss/vite` Vite plugin — there is no `tailwind.config.ts` with Tailwind v4
 
-Add components as needed:
-```bash
-npx shadcn@latest add button input label form card table
-```
+### Tailwind v4
 
-Use the `cn()` utility from `src/lib/utils.ts` (auto-generated by shadcn) for conditional classes:
-```typescript
-import { cn } from '@/lib/utils'
-<div className={cn('base-class', isActive && 'active-class')} />
-```
+- No `tailwind.config.ts` — configuration is done in `index.css` via `@theme inline {}`
+- Use CSS variables for theming: `--background`, `--foreground`, `--primary`, etc.
+- Map tokens via `@theme inline` block so Tailwind utilities reference CSS variables
+- Do not hardcode hex/rgb colours
 
-### Tailwind
+### Vite + Vitest Config
 
-- Tailwind config lives in `tailwind.config.ts` (generated by shadcn/ui init)
-- Use shadcn/ui CSS variables (`--background`, `--foreground`, `--primary`, etc.) for theming
-- Do not hardcode hex/rgb colours — use the CSS variable tokens so the theme is swappable
-- Utility classes inline in JSX; no separate CSS files except for global resets in `index.css`
-
-### TypeScript Types
+Import from `vitest/config` (not `vite`) so the `test` block is typed correctly:
 
 ```typescript
-// src/types/customer.ts
-export interface Customer {
-  id: number
-  firstName: string
-  lastName: string
-  dateOfBirth: string  // ISO date string "YYYY-MM-DD"
-  createdAt: string    // ISO timestamp
-}
+import { defineConfig } from 'vitest/config'
 
-export interface CreateCustomerRequest {
-  firstName: string
-  lastName: string
-  dateOfBirth: string
-}
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+  server: {
+    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+  },
+})
+```
 
-export interface FieldError {
-  field: string
-  message: string
-}
+### TypeScript Path Alias
 
-export interface ApiError {
-  errors: FieldError[]
-}
+Set in `tsconfig.app.json` — required for `@/` imports:
+
+```json
+"baseUrl": ".",
+"paths": { "@/*": ["./src/*"] }
 ```
 
 ### Axios Instance
 
-Configure a single Axios instance — never import Axios directly in components:
+Use a **relative `baseURL`** — this lets nginx proxy `/api/*` in Docker and Vite proxy it locally. Never hardcode a host here.
 
 ```typescript
 // src/api/axios.ts
-import axios from 'axios'
-
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   headers: { 'Content-Type': 'application/json' },
 })
 ```
 
+`VITE_API_BASE_URL` is intentionally left unset in production builds. Set it only for
+local dev if you need to point at a non-proxied host.
+
 ### API Functions
 
-Keep API calls in `src/api/customerApi.ts` — pure async functions, no hooks:
+Keep in `src/api/customerApi.ts` — pure async functions, no hooks:
 
 ```typescript
-import { apiClient } from './axios'
-import type { Customer, CreateCustomerRequest } from '@/types/customer'
-
 export const getCustomers = () =>
-  apiClient.get<Customer[]>('/api/customers').then(r => r.data)
+  apiClient.get<Customer[]>('/api/customers').then((r) => r.data)
+
+export const getCustomerById = (id: number) =>
+  apiClient.get<Customer>(`/api/customers/${id}`).then((r) => r.data)
 
 export const createCustomer = (data: CreateCustomerRequest) =>
-  apiClient.post<Customer>('/api/customers', data).then(r => r.data)
+  apiClient.post<Customer>('/api/customers', data).then((r) => r.data)
 ```
 
 ### React Query Hooks
 
-All server state lives in hooks under `src/hooks/`. Components never call API functions directly.
+All server state lives in `src/hooks/`. Components never call API functions directly.
 
 ```typescript
-// src/hooks/useCustomers.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCustomers, createCustomer } from '@/api/customerApi'
-import type { CreateCustomerRequest } from '@/types/customer'
-
 export const CUSTOMERS_KEY = ['customers'] as const
 
 export function useCustomers() {
-  return useQuery({
-    queryKey: CUSTOMERS_KEY,
-    queryFn: getCustomers,
-  })
+  return useQuery({ queryKey: CUSTOMERS_KEY, queryFn: getCustomers })
 }
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: CreateCustomerRequest) => createCustomer(data),
+    mutationFn: createCustomer,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
   })
 }
 ```
 
-### QueryClient Setup
+### Form Validation
+
+Use `react-hook-form` + `zod` directly (not the shadcn/ui `<Form>` wrapper — unnecessary complexity for this scope):
 
 ```typescript
-// src/main.tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1 },
-  },
+const schema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  dateOfBirth: z.string().refine((v) => new Date(v) < new Date(), {
+    message: 'Date of birth must be in the past',
+  }),
 })
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>
-)
+const { register, handleSubmit, setError, reset, formState: { errors } } =
+  useForm<FormValues>({ resolver: zodResolver(schema) })
+```
+
+Map API 400 errors back to form fields on mutation error:
+
+```typescript
+onError: (error) => {
+  if (axios.isAxiosError(error) && error.response?.status === 400) {
+    const apiError = error.response.data as ApiError
+    apiError.errors.forEach((e) =>
+      setError(e.field as keyof FormValues, { message: e.message })
+    )
+  }
+},
 ```
 
 ### Component Rules
 
-- **No business logic in components** — use hooks
-- **No direct API calls in components** — use hooks
-- **Props over prop-drilling** for this scope — no Zustand/Context needed
-- **shadcn/ui `<Form>`** (built on react-hook-form) for the customer form — it handles
-  validation state, error display, and accessibility automatically
-- Handle React Query error states in the component that owns the mutation/query:
-
-```typescript
-const { mutate, isPending, error } = useCreateCustomer()
-
-// Map API validation errors back to form fields
-if (axios.isAxiosError(error) && error.response?.status === 400) {
-  const apiError = error.response.data as ApiError
-  apiError.errors.forEach(e => form.setError(e.field as keyof CreateCustomerRequest, {
-    message: e.message
-  }))
-}
-```
-
-### ESLint + Prettier
-
-`eslint.config.js` should extend:
-- `eslint:recommended`
-- `@typescript-eslint/recommended`
-- `plugin:react-hooks/recommended`
-- `plugin:jsx-a11y/recommended`
-
-`.prettierrc`:
-```json
-{
-  "semi": false,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "printWidth": 100
-}
-```
-
-Run: `npm run lint` / `npm run format`
-Scripts in `package.json`:
-```json
-"lint": "eslint src --ext .ts,.tsx",
-"format": "prettier --write src"
-```
+- No business logic in components — use hooks
+- No direct API calls in components — use hooks
+- Handle all loading/error/empty states in the component that owns the query
 
 ---
 
@@ -454,28 +361,19 @@ Scripts in `package.json`:
 
 ### POST /api/customers
 
-**Request:**
-```json
-{ "firstName": "Jane", "lastName": "Smith", "dateOfBirth": "1990-05-15" }
-```
+**Request:** `{ "firstName": "Jane", "lastName": "Smith", "dateOfBirth": "1990-05-15" }`
 
-**201 Created:**
-```json
-{ "id": 1, "firstName": "Jane", "lastName": "Smith", "dateOfBirth": "1990-05-15", "createdAt": "2026-03-20T10:00:00Z" }
-```
+**201 Created:** `{ "id": 1, "firstName": "Jane", "lastName": "Smith", "dateOfBirth": "1990-05-15", "createdAt": "2026-03-20T10:00:00Z" }`
 
-**400 Bad Request:**
-```json
-{ "errors": [{ "field": "firstName", "message": "must not be blank" }] }
-```
+**400 Bad Request:** `{ "errors": [{ "field": "firstName", "message": "must not be blank" }] }`
 
 ### GET /api/customers
 
-**200 OK:** Array of the above customer shape (empty array `[]` when no records).
+**200 OK:** Array of customer shape. Empty array `[]` when no records.
 
 ### GET /api/customers/{id}
 
-**200 OK:** Single customer. **404 Not Found:** `{ "errors": [{ "field": "id", "message": "not found" }] }`
+**200 OK:** Single customer. **404:** `{ "errors": [{ "field": "id", "message": "..." }] }`
 
 ---
 
@@ -483,140 +381,113 @@ Scripts in `package.json`:
 
 ### Backend
 
-- `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `MockMvc` for controller integration tests
-- Test against the real H2 in-memory database — no mocking of the repository layer
-- Cover: POST 201, POST 400 (blank fields, future date of birth), GET 200, GET 404
+- `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@AutoConfigureMockMvc` + `MockMvc`
+- Tests hit the real H2 in-memory database — do not mock the repository layer
+- Cover: POST 201, POST 400 (blank fields, future date of birth), GET 200 list, GET 404
 
 ### Frontend
 
-- **Vitest** as test runner (Vite-native, no Jest config needed)
+- **Vitest** (configured in `vite.config.ts` via `vitest/config`)
 - **React Testing Library** — test behaviour, not implementation
-- **msw v2** for API mocking in tests — handlers in `src/mocks/handlers.ts`
-- Cover: form renders and submits, validation errors display, list renders rows, loading/error states
+- **msw v2** for API mocking — handlers in `src/mocks/handlers.ts`, server in `src/mocks/server.ts`
+- Test setup in `src/test/setup.ts`: starts/resets/closes msw server around each test
+- Target: 90%+ coverage across all metrics (`npm run test:coverage`)
+- Current: ~97% statements, ~95% branches, 100% functions
 
-### What to skip (given time-box)
+### msw Handler Pattern
 
-- Full Playwright E2E — `docker compose up` smoke test covers integration
-- Backend service unit tests are optional if controller integration tests cover the same path
+Handlers should cover all API routes used by the app. Override per-test with `server.use(...)` for error cases. Use `delay('infinite')` to test pending/loading states.
 
 ---
 
 ## Docker / Running Locally
 
-**Primary workflow (Mac + Docker Desktop):**
+**Primary workflow:**
 ```bash
 docker compose up --build
-# Frontend → http://localhost:3000
+# Frontend → http://localhost:3001
 # Backend  → http://localhost:8080/api/customers
 ```
 
-**Backend only (local dev):**
+**Backend only (local dev, dev profile enables H2 console):**
 ```bash
 cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
 # H2 console → http://localhost:8080/h2-console
 ```
 
-**Frontend only (local dev, expects backend on :8080):**
+**Frontend only (local dev — Vite proxy handles /api → :8080):**
 ```bash
 cd frontend && npm run dev
-# Vite proxy in vite.config.ts forwards /api → http://localhost:8080
 ```
 
-**Vite dev proxy** (avoids needing Nginx during local dev):
-```typescript
-// vite.config.ts
-server: {
-  proxy: {
-    '/api': { target: 'http://localhost:8080', changeOrigin: true }
-  }
-}
-```
-
-**Teardown:**
+**Tests:**
 ```bash
-docker compose down
+cd frontend && npm run test          # Vitest unit tests
+cd frontend && npm run test:coverage # with coverage report
+cd backend  && ./gradlew test        # Spring Boot integration tests
 ```
-
----
-
-## Environment Variables
-
-| Variable | Where set | Value |
-|---|---|---|
-| `VITE_API_BASE_URL` | Docker Compose build arg | `http://localhost:8080` |
-| `SPRING_PROFILES_ACTIVE` | Docker Compose environment | `docker` |
-| `SERVER_PORT` | Docker Compose environment | `8080` |
-
-Never hardcode these values in application code.
-
----
-
-## Submission Checklist
-
-- [ ] `docker compose up --build` starts both containers cleanly
-- [ ] POST /api/customers creates a record (verified in browser)
-- [ ] GET /api/customers returns the list
-- [ ] Validation errors surface in the UI (try submitting empty form)
-- [ ] `./gradlew ktlintCheck` passes
-- [ ] `npm run lint` passes
-- [ ] Backend integration tests pass: `./gradlew test`
-- [ ] Frontend unit tests pass: `npm run test`
-- [ ] `README.md` covers prerequisites + how to run
-- [ ] `AI_USAGE.md` is accurate and honest
-- [ ] Git bundle created: `git bundle create james-bolton-tech-test.bundle --all`
 
 ---
 
 ## Docker Configuration
 
-### docker-compose.yml
+### Networking pattern
+
+The frontend container runs nginx. All `/api/` requests from the browser hit nginx on port 80,
+which proxies to the `backend` container on the Docker internal network. The browser never
+calls the backend directly — this avoids CORS entirely.
+
+**Do not** pass `VITE_API_BASE_URL` as a build arg to the frontend Docker image. The axios
+`baseURL` must stay relative (`''`) so nginx handles routing.
+
+### docker-compose.yml (key points)
 
 ```yaml
-version: '3.9'
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: customer-api
-    ports:
-      - '8080:8080'
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8080
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/actuator/health']
+      # Use wget — curl is not in eclipse-temurin:21-jre-alpine
+      test: ['CMD', 'wget', '--quiet', '--spider', 'http://localhost:8080/actuator/health']
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s
-    networks:
-      - customer-net
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:8080
-    container_name: customer-ui
-    ports:
-      - '3000:80'
+    # No build args — baseURL must be relative for nginx proxy to work
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - customer-net
-
-networks:
-  customer-net:
-    driver: bridge
 ```
 
-### Backend Dockerfile (multi-stage)
+### nginx.conf
+
+```nginx
+server {
+    listen 80;
+
+    # Docker's internal DNS — defer upstream resolution to request time (not startup)
+    resolver 127.0.0.11 valid=30s ipv6=off;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        # Must use a variable — otherwise nginx fails at startup if backend isn't up yet
+        set $backend http://backend:8080;
+        proxy_pass         $backend;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+    }
+}
+```
+
+### Backend Dockerfile
 
 ```dockerfile
-# Stage 1 — Build
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 COPY gradlew .
@@ -625,7 +496,6 @@ COPY build.gradle.kts settings.gradle.kts .
 COPY src src
 RUN chmod +x gradlew && ./gradlew bootJar --no-daemon
 
-# Stage 2 — Runtime (lean JRE image)
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
@@ -633,20 +503,16 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-### Frontend Dockerfile (multi-stage)
+### Frontend Dockerfile
 
 ```dockerfile
-# Stage 1 — Build
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json .
+COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN npm run build
+RUN npm run build          # no VITE_API_BASE_URL — stays relative
 
-# Stage 2 — Serve (minimal Nginx)
 FROM nginx:stable-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -654,65 +520,30 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-### nginx.conf
+---
 
-Handles SPA routing and proxies `/api` to the backend container — avoids browser CORS issues.
+## Environment Variables
 
-```nginx
-server {
-    listen 80;
-    location / {
-        root   /usr/share/nginx/html;
-        index  index.html;
-        try_files $uri $uri/ /index.html;
-    }
-    location /api/ {
-        proxy_pass         http://backend:8080;
-        proxy_set_header   Host $host;
-        proxy_set_header   X-Real-IP $remote_addr;
-    }
-}
-```
+| Variable | Where set | Purpose |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | Docker Compose environment | `docker` in containers, `dev` for local |
+| `SERVER_PORT` | Docker Compose environment | `8080` |
+| `VITE_API_BASE_URL` | Local `.env` only (optional) | Override API host for local dev without proxy |
+
+`VITE_API_BASE_URL` is **not** set in Docker builds. The default `''` (relative URL) is correct for production — nginx proxies `/api/`.
 
 ---
 
-## Phased Implementation Plan
+## Submission Checklist
 
-Structured into four phases, each delivering working, testable output.
-
-| Phase | Scope | Time Est. | Deliverable |
-|-------|-------|-----------|-------------|
-| 1 — Scaffold | Repo structure, Gradle, Vite, Dockerfiles, Compose | 30 min | Running containers (empty app) |
-| 2 — Backend | Entity, repository, service, controller, validation, H2, tests | 60 min | Working REST API + tests |
-| 3 — Frontend | Types, API client, CustomerForm, CustomerList, styling | 60 min | Working UI end-to-end |
-| 4 — Polish | Error handling, loading states, FE tests, README, AI_USAGE.md | 45 min | Submission-ready bundle |
-
-### Phase 1 — Scaffold
-- Initialise git repository with `.gitignore` for Gradle and Node
-- Bootstrap Spring Boot via start.spring.io (Kotlin, Gradle, Web, Data JPA, H2, Actuator, Validation)
-- Bootstrap React/Vite: `npm create vite@latest frontend -- --template react-ts`
-- Write skeleton Dockerfiles and docker-compose.yml — verify both containers start
-
-### Phase 2 — Backend
-- Define `Customer` entity with `@Entity`, `@Id`, `@GeneratedValue`
-- Create `CustomerRepository` extending `JpaRepository<Customer, Long>`
-- Implement `CustomerService` with `create()` and `getAll()`
-- Expose `CustomerController` with POST and GET endpoints
-- Add Bean Validation (`@NotBlank`, `@NotNull`, `@Past`) and `@RestControllerAdvice` for 400 errors
-- Configure H2 console (dev profile only) and JPA in `application.yml`
-- Write integration tests with `@SpringBootTest` + MockMvc
-
-### Phase 3 — Frontend
-- Define `Customer` TypeScript interface in `src/types/customer.ts`
-- Implement `customerApi.ts` with typed Axios wrappers
-- Build `CustomerForm` with validation feedback via shadcn/ui `<Form>`
-- Build `CustomerList` + `CustomerRow` to display all customers
-- Wire React Query hooks — invalidate cache on successful POST
-- Apply Tailwind + shadcn/ui styling
-
-### Phase 4 — Polish & Submission
-- Add loading and error states to all components
-- Write Vitest + RTL unit tests for form and list
-- Finalise README.md and AI_USAGE.md
-- End-to-end smoke test via `docker compose up`
-- Create git bundle: `git bundle create james-bolton-tech-test.bundle --all`
+- [ ] `docker compose up --build` starts both containers cleanly on port 3001 (frontend) and 8080 (backend)
+- [ ] POST /api/customers creates a record (verified in browser)
+- [ ] GET /api/customers returns the list
+- [ ] Validation errors surface in the UI (submit empty form)
+- [ ] `./gradlew ktlintCheck` passes
+- [ ] `npm run lint` passes
+- [ ] Backend integration tests pass: `./gradlew test`
+- [ ] Frontend unit tests pass: `npm run test` (19 tests, ~97% coverage)
+- [ ] `README.md` covers prerequisites + how to run
+- [ ] `AI_USAGE.md` is accurate and honest
+- [ ] Git bundle: `git bundle create james-bolton-tech-test.bundle --all`
