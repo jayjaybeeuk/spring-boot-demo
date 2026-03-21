@@ -77,6 +77,58 @@ class CustomerControllerTest {
     }
 
     @Test
+    fun `POST customers returns 400 with standard envelope for invalid date format`() {
+        mockMvc
+            .post("/api/customers") {
+                contentType = MediaType.APPLICATION_JSON
+                content =
+                    """
+                    {
+                      "firstName": "Jane",
+                      "lastName": "Smith",
+                      "dateOfBirth": "not-a-date"
+                    }
+                    """.trimIndent()
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("dateOfBirth") }
+                jsonPath("$.errors[0].message") { value("must be a valid date") }
+            }
+    }
+
+    @Test
+    fun `POST customers returns 400 with standard envelope for malformed JSON`() {
+        mockMvc
+            .post("/api/customers") {
+                contentType = MediaType.APPLICATION_JSON
+                content =
+                    """
+                    {
+                      "firstName": "Jane",
+                      "lastName": "Smith",
+                      "dateOfBirth": "1990-05-15",
+                    }
+                    """.trimIndent()
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("body") }
+                jsonPath("$.errors[0].message") { value("malformed request body") }
+            }
+    }
+
+    @Test
+    fun `POST customers returns 400 with standard envelope when request body is missing`() {
+        mockMvc
+            .post("/api/customers") {
+                contentType = MediaType.APPLICATION_JSON
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("body") }
+                jsonPath("$.errors[0].message") { value("malformed request body") }
+            }
+    }
+
+    @Test
     fun `GET customers returns 200 with list`() {
         mockMvc
             .get("/api/customers")
@@ -93,6 +145,17 @@ class CustomerControllerTest {
             .andExpect {
                 status { isNotFound() }
                 jsonPath("$.errors[0].field") { value("id") }
+            }
+    }
+
+    @Test
+    fun `GET customers by id returns 400 with standard envelope for invalid path variable`() {
+        mockMvc
+            .get("/api/customers/not-a-number")
+            .andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("id") }
+                jsonPath("$.errors[0].message") { value("must be a valid Long") }
             }
     }
 }

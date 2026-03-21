@@ -19,7 +19,7 @@ Suggested workflow:
 
 | ID | Status | Item | Estimated remediation time |
 | --- | --- | --- | --- |
-| R-001 | Unfixed | Standardise backend error responses for malformed requests | 45-60 min |
+| R-001 | Fixed | Standardise backend error responses for malformed requests | 45-60 min |
 | R-002 | Unfixed | Align frontend form validation with backend constraints | 20-30 min |
 | R-003 | Unfixed | Show generic create-customer failure feedback in the UI | 20-30 min |
 | R-004 | Unfixed | Restore a clean frontend lint pass | 10-15 min |
@@ -35,7 +35,7 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
 
 ### R-001: Standardise backend error responses for malformed requests
 
-- Status: `Unfixed`
+- Status: `Fixed`
 - Problem: The documented error envelope is only enforced for bean validation and not-found cases. Malformed JSON, invalid `LocalDate` values, missing bodies, and similar request failures are likely to return Spring's default error format instead.
 - Evidence:
   - [GlobalExceptionHandler.kt](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/backend/src/main/kotlin/com/example/customers/exception/GlobalExceptionHandler.kt#L11)
@@ -44,6 +44,9 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
   - Add explicit handlers for request parsing/binding failures.
   - Keep all client-visible API errors inside the existing `ErrorResponse` envelope.
   - Add tests for invalid JSON, invalid dates, and missing request bodies.
+- Remediation completed:
+  - Added handlers for request deserialization failures and path-variable type mismatches.
+  - Added controller tests for malformed JSON, invalid date input, missing body, and invalid path variable input.
 - Estimated remediation time: 45-60 min
 
 ### R-002: Align frontend form validation with backend constraints
