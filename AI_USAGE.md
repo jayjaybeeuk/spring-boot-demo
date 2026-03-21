@@ -32,7 +32,7 @@ This document records all AI tool usage during development of the Customer Manag
 **Task delegated:** Adding Node 24 version constraint and `.nvmrc`
 **What was generated:** `frontend/.nvmrc` pinned to `24.11.0`, `engines` field added to `package.json`.
 **What I wrote myself / manually fixed:** Directed the change — AI scaffolded the project using `node:20-alpine` in the Dockerfile and made no attempt to align with the Node version I was actually running locally (24.11.0). I identified this inconsistency and requested the correction.
-**AI mistakes corrected:** Dockerfile still uses `node:20-alpine` for the build stage (intentional — LTS image for Docker builds); the `.nvmrc` and `engines` field cover local development alignment.
+**AI mistakes corrected:** AI initially scaffolded the Dockerfile with `node:20-alpine` and left it there even after adding the `.nvmrc`. I updated it to `node:24-alpine` to keep the Docker build consistent with the pinned local version — Node 24 is LTS.
 **Time estimate:** <1 min.
 
 ---
