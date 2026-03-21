@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { CustomerForm } from '@/components/CustomerForm'
 import { server } from '@/mocks/server'
@@ -44,7 +44,25 @@ describe('CustomerForm', () => {
     })
   })
 
-  it('shows API error messages on 400 response', async () => {
+  it('shows pending state while submitting', async () => {
+    server.use(
+      http.post('/api/customers', async () => {
+        await delay('infinite')
+        return new HttpResponse(null)
+      })
+    )
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), 'Jane')
+    await user.type(screen.getByLabelText(/last name/i), 'Smith')
+    await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    expect(await screen.findByRole('button', { name: /saving/i })).toBeDisabled()
+  })
+
+  it('shows API validation errors on 400 response', async () => {
     server.use(
       http.post('/api/customers', () =>
         HttpResponse.json(
@@ -63,5 +81,25 @@ describe('CustomerForm', () => {
     await user.click(screen.getByRole('button', { name: /add customer/i }))
 
     expect(await screen.findByText(/must not be blank/i)).toBeInTheDocument()
+  })
+
+  it('does not show API errors on non-400 server error', async () => {
+    server.use(
+      http.post('/api/customers', () =>
+        HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
+      )
+    )
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), 'Jane')
+    await user.type(screen.getByLabelText(/last name/i), 'Smith')
+    await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /add customer/i })).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/must not be blank/i)).not.toBeInTheDocument()
   })
 })

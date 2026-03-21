@@ -14,6 +14,17 @@ const customers: Customer[] = [
 export const handlers = [
   http.get('/api/customers', () => HttpResponse.json(customers)),
 
+  http.get('/api/customers/:id', ({ params }) => {
+    const customer = customers.find((c) => c.id === Number(params.id))
+    if (!customer) {
+      return HttpResponse.json(
+        { errors: [{ field: 'id', message: 'not found' }] },
+        { status: 404 }
+      )
+    }
+    return HttpResponse.json(customer)
+  }),
+
   http.post('/api/customers', async ({ request }) => {
     const body = (await request.json()) as Partial<Customer>
 
