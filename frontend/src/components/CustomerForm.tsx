@@ -9,13 +9,44 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+function getTodayIsoDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function isPastDate(value: string) {
+  if (!ISO_DATE_PATTERN.test(value)) {
+    return false
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  const parsed = new Date(Date.UTC(year, month - 1, day))
+
+  if (Number.isNaN(parsed.getTime())) {
+    return false
+  }
+
+  const isSameCalendarDate =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+
+  return isSameCalendarDate && value < getTodayIsoDate()
+}
+
 const schema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().trim().min(1, 'First name is required'),
+  lastName: z.string().trim().min(1, 'Last name is required'),
   dateOfBirth: z
     .string()
     .min(1, 'Date of birth is required')
-    .refine((v) => new Date(v) < new Date(), { message: 'Date of birth must be in the past' }),
+    .refine(isPastDate, { message: 'Date of birth must be in the past' }),
 })
 
 type FormValues = z.infer<typeof schema>

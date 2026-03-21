@@ -6,6 +6,15 @@ import { describe, expect, it } from 'vitest'
 import { CustomerForm } from '@/components/CustomerForm'
 import { server } from '@/mocks/server'
 
+function getTodayIsoDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 function renderWithQuery(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -30,6 +39,31 @@ describe('CustomerForm', () => {
     expect(await screen.findByText(/last name is required/i)).toBeInTheDocument()
   })
 
+  it('rejects whitespace-only names before submission', async () => {
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), '   ')
+    await user.type(screen.getByLabelText(/last name/i), '   ')
+    await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    expect(await screen.findByText(/first name is required/i)).toBeInTheDocument()
+    expect(await screen.findByText(/last name is required/i)).toBeInTheDocument()
+  })
+
+  it('rejects same-day date of birth before submission', async () => {
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), 'Jane')
+    await user.type(screen.getByLabelText(/last name/i), 'Smith')
+    await user.type(screen.getByLabelText(/date of birth/i), getTodayIsoDate())
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    expect(await screen.findByText(/date of birth must be in the past/i)).toBeInTheDocument()
+  })
+
   it('submits successfully and resets form', async () => {
     const user = userEvent.setup()
     renderWithQuery(<CustomerForm />)
@@ -41,6 +75,43 @@ describe('CustomerForm', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText(/first name/i)).toHaveValue('')
+    })
+  })
+
+  it('trims names before sending them to the API', async () => {
+    let requestBody: unknown
+
+    server.use(
+      http.post('/api/customers', async ({ request }) => {
+        requestBody = await request.json()
+
+        return HttpResponse.json(
+          {
+            id: 2,
+            firstName: 'Jane',
+            lastName: 'Smith',
+            dateOfBirth: '1990-05-15',
+            createdAt: new Date().toISOString(),
+          },
+          { status: 201 }
+        )
+      })
+    )
+
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), '  Jane  ')
+    await user.type(screen.getByLabelText(/last name/i), '  Smith  ')
+    await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    await waitFor(() => {
+      expect(requestBody).toEqual({
+        firstName: 'Jane',
+        lastName: 'Smith',
+        dateOfBirth: '1990-05-15',
+      })
     })
   })
 

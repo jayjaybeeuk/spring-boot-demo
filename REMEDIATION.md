@@ -20,7 +20,7 @@ Suggested workflow:
 | ID | Status | Item | Estimated remediation time |
 | --- | --- | --- | --- |
 | R-001 | Fixed | Standardise backend error responses for malformed requests | 45-60 min |
-| R-002 | Unfixed | Align frontend form validation with backend constraints | 20-30 min |
+| R-002 | Fixed | Align frontend form validation with backend constraints | 20-30 min |
 | R-003 | Unfixed | Show generic create-customer failure feedback in the UI | 20-30 min |
 | R-004 | Unfixed | Restore a clean frontend lint pass | 10-15 min |
 | R-005 | Unfixed | Reconcile Docker and local-development documentation | 10-15 min |
@@ -51,7 +51,7 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
 
 ### R-002: Align frontend form validation with backend constraints
 
-- Status: `Unfixed`
+- Status: `Fixed`
 - Problem: The frontend accepts values the backend rejects. Names use `.min(1)` rather than trimming blank input, and date validation is based on `new Date(...) < new Date()` rather than a clear date-only rule.
 - Evidence:
   - [CustomerForm.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/CustomerForm.tsx#L12)
@@ -60,6 +60,10 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
   - Trim or reject whitespace-only names on the client.
   - Validate date-of-birth with the same date semantics as the backend.
   - Add frontend tests for whitespace-only names and same-day DOB.
+- Remediation completed:
+  - Updated the form schema to trim names before validation and submission.
+  - Replaced `Date` timestamp comparison with date-only validation that rejects same-day DOB values.
+  - Added frontend tests for whitespace-only names, same-day DOB, and trimmed submit payloads.
 - Estimated remediation time: 20-30 min
 
 ### R-003: Show generic create-customer failure feedback in the UI
