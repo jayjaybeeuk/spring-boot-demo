@@ -10,6 +10,7 @@ This document records all AI tool usage during development of the Customer Manag
 | ------------------------- | ------------------------------------------------ |
 | GitHub Copilot            | In-editor code completion and suggestions        |
 | Claude (Anthropic Cowork) | Planning, architecture design, and documentation |
+| Codex (GPT-5)             | Codebase audit, review findings, remediation tracking |
 
 ---
 
@@ -49,6 +50,18 @@ This document records all AI tool usage during development of the Customer Manag
 
 ---
 
+### Codebase Audit & Remediation Tracking
+
+**Tool:** Codex (GPT-5)
+**Task delegated:** Performing a full repository audit, identifying review items, and converting those findings into a remediation tracker that can be updated commit-by-commit.
+**What was generated:** A prioritised audit covering backend API contract consistency, frontend validation gaps, UX failure handling, lint issues, documentation drift, ordering behavior, and test coverage blind spots. Generated root-level remediation tracker document (`REMEDIATION.md`) with `Fixed` / `Unfixed` status fields, remediation notes, and estimated implementation times.
+**What I wrote myself / manually fixed:** Directed the audit toward practical, commit-sized remediation items rather than a generic architecture review. Chose to capture the work as a living tracker so each fix can be committed alongside a status change.
+**How I validated it:** Cross-checked findings against repository files, lint/test commands where available, and project documentation. Confirmed the frontend test suite and build pass, and confirmed the frontend lint issue is reproducible.
+**AI mistakes corrected:** None in the documenting phase, but the generated findings were filtered down to code-backed items rather than broad stylistic suggestions.
+**Time estimate:** ~15–20 min with AI assistance vs ~60–90 min without (manual codebase scan, note-taking, writing, and structuring a remediation backlog).
+
+---
+
 ## Time Breakdown
 
 | Phase                       | Estimated time (with AI) | Estimated time (without AI) |
@@ -59,7 +72,9 @@ This document records all AI tool usage during development of the Customer Manag
 | Frontend scaffolding        | 10 min                   | 45 min                      |
 | Frontend components & tests | 5 min                    | 60 min                      |
 | README & documentation      | 20 min                   | 90 min                      |
-| **Total**                   | TBD                      | TBD                         |
+| Codebase scan / audit       | 15–20 min                | 60–90 min                   |
+| Remediation planning / tracking | 10–15 min            | 30–45 min                   |
+| **Total**                   | 100–110 min              | 450–510 min                 |
 
 _This log will be updated as development progresses._
 
