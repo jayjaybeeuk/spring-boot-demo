@@ -57,12 +57,15 @@ export function CustomerForm() {
   const {
     register,
     handleSubmit,
+    clearErrors,
     setError,
     reset,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
   const onSubmit = (data: FormValues) => {
+    clearErrors('root')
+
     const request: CreateCustomerRequest = {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -70,14 +73,24 @@ export function CustomerForm() {
     }
 
     mutate(request, {
-      onSuccess: () => reset(),
+      onSuccess: () => {
+        clearErrors('root')
+        reset()
+      },
       onError: (error) => {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
           const apiError = error.response.data as ApiError
           apiError.errors.forEach((e) =>
             setError(e.field as keyof FormValues, { message: e.message })
           )
+
+          return
         }
+
+        setError('root.serverError', {
+          type: 'server',
+          message: 'Failed to save customer. Please try again.',
+        })
       },
     })
   }
@@ -127,6 +140,12 @@ export function CustomerForm() {
               <p className="text-destructive text-sm">{errors.dateOfBirth.message}</p>
             )}
           </div>
+
+          {errors.root?.serverError?.message && (
+            <p role="alert" className="text-destructive text-sm">
+              {errors.root.serverError.message}
+            </p>
+          )}
 
           <Button type="submit" disabled={isPending}>
             {isPending ? 'Saving…' : 'Add customer'}

@@ -154,7 +154,7 @@ describe('CustomerForm', () => {
     expect(await screen.findByText(/must not be blank/i)).toBeInTheDocument()
   })
 
-  it('does not show API errors on non-400 server error', async () => {
+  it('shows a generic error on non-400 server error', async () => {
     server.use(
       http.post('/api/customers', () =>
         HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
@@ -168,9 +168,53 @@ describe('CustomerForm', () => {
     await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
     await user.click(screen.getByRole('button', { name: /add customer/i }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /add customer/i })).toBeInTheDocument()
-    })
+    expect(
+      await screen.findByText(/failed to save customer\. please try again\./i)
+    ).toBeInTheDocument()
     expect(screen.queryByText(/must not be blank/i)).not.toBeInTheDocument()
+  })
+
+  it('clears the generic error after a successful retry', async () => {
+    let shouldFail = true
+
+    server.use(
+      http.post('/api/customers', () => {
+        if (shouldFail) {
+          shouldFail = false
+          return HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
+        }
+
+        return HttpResponse.json(
+          {
+            id: 2,
+            firstName: 'Jane',
+            lastName: 'Smith',
+            dateOfBirth: '1990-05-15',
+            createdAt: new Date().toISOString(),
+          },
+          { status: 201 }
+        )
+      })
+    )
+
+    const user = userEvent.setup()
+    renderWithQuery(<CustomerForm />)
+
+    await user.type(screen.getByLabelText(/first name/i), 'Jane')
+    await user.type(screen.getByLabelText(/last name/i), 'Smith')
+    await user.type(screen.getByLabelText(/date of birth/i), '1990-05-15')
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    expect(
+      await screen.findByText(/failed to save customer\. please try again\./i)
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /add customer/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/failed to save customer\. please try again\./i)
+      ).not.toBeInTheDocument()
+    })
   })
 })

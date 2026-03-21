@@ -21,7 +21,7 @@ Suggested workflow:
 | --- | --- | --- | --- |
 | R-001 | Fixed | Standardise backend error responses for malformed requests | 45-60 min |
 | R-002 | Fixed | Align frontend form validation with backend constraints | 20-30 min |
-| R-003 | Unfixed | Show generic create-customer failure feedback in the UI | 20-30 min |
+| R-003 | Fixed | Show generic create-customer failure feedback in the UI | 20-30 min |
 | R-004 | Unfixed | Restore a clean frontend lint pass | 10-15 min |
 | R-005 | Unfixed | Reconcile Docker and local-development documentation | 10-15 min |
 | R-006 | Unfixed | Define and enforce customer list ordering | 15-30 min |
@@ -68,7 +68,7 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
 
 ### R-003: Show generic create-customer failure feedback in the UI
 
-- Status: `Unfixed`
+- Status: `Fixed`
 - Problem: Non-400 failures during customer creation do not surface a useful message to the user. The current behavior leaves the form interactive again without explaining what failed.
 - Evidence:
   - [CustomerForm.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/CustomerForm.tsx#L41)
@@ -77,6 +77,10 @@ Estimated implementation total for current backlog: 3 hr 10 min to 4 hr 45 min
   - Add a form-level error state for 5xx and network failures.
   - Preserve field-level mapping for validation errors.
   - Add tests for generic failure messaging.
+- Remediation completed:
+  - Added a form-level server error message for non-400 create failures.
+  - Preserved field-specific 400 handling.
+  - Added tests for generic failure visibility and successful retry recovery.
 - Estimated remediation time: 20-30 min
 
 ### R-004: Restore a clean frontend lint pass
