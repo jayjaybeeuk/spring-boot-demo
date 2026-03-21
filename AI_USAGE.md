@@ -26,6 +26,17 @@ This document records all AI tool usage during development of the Customer Manag
 
 ---
 
+### Node Version Pin
+
+**Tool:** Claude Code (Claude Sonnet 4.6)
+**Task delegated:** Adding Node 24 version constraint and `.nvmrc`
+**What was generated:** `frontend/.nvmrc` pinned to `24.11.0`, `engines` field added to `package.json`.
+**What I wrote myself / manually fixed:** Directed the change — AI scaffolded the project using `node:20-alpine` in the Dockerfile and made no attempt to align with the Node version I was actually running locally (24.11.0). I identified this inconsistency and requested the correction.
+**AI mistakes corrected:** Dockerfile still uses `node:20-alpine` for the build stage (intentional — LTS image for Docker builds); the `.nvmrc` and `engines` field cover local development alignment.
+**Time estimate:** <1 min.
+
+---
+
 ### Planning & Architecture
 
 **Tool:** Claude via Anthropic Cowork
