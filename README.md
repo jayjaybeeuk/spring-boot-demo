@@ -50,7 +50,7 @@ cd backend
 
 ### Frontend only
 
-Requires: Node 20+. Expects the backend running on port 8080.
+Requires: Node 24+. Expects the backend running on port 8080.
 
 ```bash
 cd frontend
@@ -167,7 +167,7 @@ Retrieve a single customer by ID.
 │   │   frontend        │  HTTP   │   backend             │   │
 │   │   React 19 / TS   │────────▶│   Spring Boot 3.x     │   │
 │   │   Vite / Nginx    │  :8080  │   Kotlin              │   │
-│   │   port: 3000      │         │   port: 8080          │   │
+│   │   port: 3001      │         │   port: 8080          │   │
 │   └──────────────────┘         └──────────┬───────────┘    │
 │                                            │                │
 │                                    ┌───────▼───────┐        │
@@ -215,7 +215,7 @@ customer-management/
 │   ├── settings.gradle.kts
 │   └── src/
 │       ├── main/kotlin/com/example/customers/
-│       │   ├── CustomerApplication.kt
+│       │   ├── CustomersApplication.kt
 │       │   ├── config/CorsConfig.kt
 │       │   ├── domain/Customer.kt
 │       │   ├── dto/
@@ -228,15 +228,14 @@ customer-management/
 │       │   ├── service/CustomerService.kt
 │       │   └── controller/CustomerController.kt
 │       └── test/kotlin/com/example/customers/
-│           ├── CustomerControllerTest.kt
-│           └── CustomerServiceTest.kt
+│           └── CustomerControllerTest.kt
 │
 └── frontend/
     ├── Dockerfile
     ├── nginx.conf
     ├── package.json
     ├── vite.config.ts
-    ├── tsconfig.json
+    ├── tsconfig.app.json
     ├── components.json
     └── src/
         ├── main.tsx
@@ -245,12 +244,23 @@ customer-management/
         │   ├── axios.ts
         │   └── customerApi.ts
         ├── components/
-        │   ├── ui/               ← shadcn/ui generated components
+        │   ├── ui/               ← shadcn/ui components (button, card, input, label)
         │   ├── CustomerForm.tsx
         │   ├── CustomerList.tsx
         │   └── CustomerRow.tsx
         ├── hooks/
         │   └── useCustomers.ts
+        ├── mocks/
+        │   ├── handlers.ts
+        │   └── server.ts
+        ├── test/
+        │   ├── setup.ts
+        │   ├── CustomerForm.test.tsx
+        │   ├── CustomerList.test.tsx
+        │   ├── customerApi.test.ts
+        │   └── ui.test.tsx
+        ├── lib/
+        │   └── utils.ts
         └── types/
             └── customer.ts
 ```
