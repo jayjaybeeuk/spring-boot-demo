@@ -1,5 +1,6 @@
 package com.example.customers
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -14,6 +15,9 @@ import org.springframework.test.web.servlet.post
 class CustomerControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
+
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
 
     @Test
     fun `POST customers returns 201 with created customer`() {
@@ -157,5 +161,61 @@ class CustomerControllerTest {
                 jsonPath("$.errors[0].field") { value("id") }
                 jsonPath("$.errors[0].message") { value("must be a valid Long") }
             }
+    }
+
+    @Test
+    fun `GET customers by id returns 200 with customer`() {
+        val createResult =
+            mockMvc
+                .post("/api/customers") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """
+                        {
+                          "firstName": "Alice",
+                          "lastName": "Jones",
+                          "dateOfBirth": "1985-03-10"
+                        }
+                        """.trimIndent()
+                }.andReturn()
+
+        val id = objectMapper.readTree(createResult.response.contentAsString).get("id").asLong()
+
+        mockMvc
+            .get("/api/customers/$id")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.id") { value(id) }
+                jsonPath("$.firstName") { value("Alice") }
+                jsonPath("$.lastName") { value("Jones") }
+                jsonPath("$.dateOfBirth") { value("1985-03-10") }
+            }
+    }
+
+    @Test
+    fun `GET customers returns newest customer first`() {
+        val olderResult =
+            mockMvc
+                .post("/api/customers") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"firstName":"Older","lastName":"Customer","dateOfBirth":"1980-01-01"}"""
+                }.andReturn()
+        val olderId = objectMapper.readTree(olderResult.response.contentAsString).get("id").asLong()
+
+        val newerResult =
+            mockMvc
+                .post("/api/customers") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"firstName":"Newer","lastName":"Customer","dateOfBirth":"1990-06-15"}"""
+                }.andReturn()
+        val newerId = objectMapper.readTree(newerResult.response.contentAsString).get("id").asLong()
+
+        val listResult = mockMvc.get("/api/customers").andReturn()
+        val customers = objectMapper.readTree(listResult.response.contentAsString)
+        val ids = (0 until customers.size()).map { customers[it].get("id").asLong() }
+
+        assert(ids.indexOf(newerId) < ids.indexOf(olderId)) {
+            "Expected newer customer (id=$newerId) to appear before older customer (id=$olderId) in list"
+        }
     }
 }
