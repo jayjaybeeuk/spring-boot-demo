@@ -392,7 +392,7 @@ onError: (error) => {
 - **msw v2** for API mocking — handlers in `src/mocks/handlers.ts`, server in `src/mocks/server.ts`
 - Test setup in `src/test/setup.ts`: starts/resets/closes msw server around each test
 - Target: 90%+ coverage across all metrics (`npm run test:coverage`)
-- Current: ~97% statements, ~95% branches, 100% functions
+- Current: 96.1% statements, 93.75% branches, 100% functions, 95.83% lines (23 tests)
 
 ### msw Handler Pattern
 
@@ -543,7 +543,7 @@ CMD ["nginx", "-g", "daemon off;"]
 - [ ] `./gradlew ktlintCheck` passes
 - [ ] `npm run lint` passes
 - [ ] Backend integration tests pass: `./gradlew test`
-- [ ] Frontend unit tests pass: `npm run test` (19 tests, ~97% coverage)
+- [ ] Frontend unit tests pass: `npm run test` (23 tests, 96%+ coverage)
 - [ ] `README.md` covers prerequisites + how to run
 - [ ] `AI_USAGE.md` is accurate and honest
 - [ ] Git bundle: `git bundle create james-bolton-tech-test.bundle --all`
