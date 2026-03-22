@@ -6,10 +6,10 @@ This document records all AI tool usage during development of the Customer Manag
 
 ## Tools Used
 
-| Tool                      | Purpose                                          |
-| ------------------------- | ------------------------------------------------ |
-| GitHub Copilot            | In-editor code completion and suggestions        |
-| Claude (Anthropic Cowork) | Planning, architecture design, and documentation |
+| Tool                      | Purpose                                               |
+| ------------------------- | ----------------------------------------------------- |
+| GitHub Copilot            | In-editor code completion and suggestions             |
+| Claude (Anthropic Cowork) | Planning, architecture design, and documentation      |
 | Codex (GPT-5)             | Codebase audit, review findings, remediation tracking |
 
 ---
@@ -64,17 +64,17 @@ This document records all AI tool usage during development of the Customer Manag
 
 ## Time Breakdown
 
-| Phase                       | Estimated time (with AI) | Estimated time (without AI) |
-| --------------------------- | ------------------------ | --------------------------- |
-| Planning & architecture     | 15 min                   | 45–60 min                   |
-| Backend scaffolding         | 15 min                   | 60 min                      |
-| Backend logic & tests       | 10 min                   | 60 min                      |
-| Frontend scaffolding        | 10 min                   | 45 min                      |
-| Frontend components & tests | 5 min                    | 60 min                      |
-| README & documentation      | 20 min                   | 90 min                      |
-| Codebase scan / audit       | 15–20 min                | 60–90 min                   |
-| Remediation planning / tracking | 10–15 min            | 30–45 min                   |
-| **Total**                   | 100–110 min              | 450–510 min                 |
+| Phase                           | Estimated time (with AI) | Estimated time (without AI) |
+| ------------------------------- | ------------------------ | --------------------------- |
+| Planning & architecture         | 15 min                   | 45–60 min                   |
+| Backend scaffolding             | 15 min                   | 60 min                      |
+| Backend logic & tests           | 10 min                   | 60 min                      |
+| Frontend scaffolding            | 10 min                   | 45 min                      |
+| Frontend components & tests     | 5 min                    | 60 min                      |
+| README & documentation          | 20 min                   | 90 min                      |
+| Codebase scan / audit           | 15–20 min                | 60–90 min                   |
+| Remediation planning / tracking | 10–15 min                | 30–45 min                   |
+| **Total**                       | 100–110 min              | 450–510 min                 |
 
 _This log will be updated as development progresses._
 
@@ -82,11 +82,18 @@ _This log will be updated as development progresses._
 
 ## Reflections on AI Impact
 
-> _To be completed on submission._
-
-Areas to cover:
-
 - Where AI accelerated development most
+
+Planning and implementation were equally beneficial. I could write a detailed specification and help shape a plan for what needed to be done and when it needed to be done.
+
 - Where AI suggestions needed correction or were not used
+
+It took a few attempts to get the guidelines correct for the build. However, once I gave it enough context it was usually correct. Enforcing test coverage helped it to correct itself.
+
 - How AI affected code quality vs writing everything manually
+
+Code quality was generally very good, with only a few "hallucinations" — but these were rare. I used different models to review each other's output.
+
 - Whether AI usage changed the approach taken
+
+I had certain standards in mind — AI simply ensured that these were enforced.
