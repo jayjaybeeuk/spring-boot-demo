@@ -257,6 +257,63 @@ customer-management/
 
 ---
 
+## Future Considerations
+
+### Persistent Database
+
+The application uses H2 in-memory storage to keep the scope self-contained. Swapping to a real database requires only config and dependency changes — no application code changes are needed because Spring Data JPA abstracts the database entirely.
+
+**To switch to PostgreSQL:**
+
+1. Replace the H2 dependency in `backend/build.gradle.kts`:
+```kotlin
+// Remove:
+runtimeOnly("com.h2database:h2")
+
+// Add:
+runtimeOnly("org.postgresql:postgresql")
+```
+
+2. Update `application.yml`:
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/customers
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+```
+
+3. Add a `db` service to `docker-compose.yml`:
+```yaml
+db:
+  image: postgres:16-alpine
+  environment:
+    POSTGRES_DB: customers
+    POSTGRES_USER: ${DB_USERNAME}
+    POSTGRES_PASSWORD: ${DB_PASSWORD}
+  volumes:
+    - postgres_data:/var/lib/postgresql/data
+```
+
+For production, replace `ddl-auto: validate` with a migration tool such as **Flyway** or **Liquibase** to manage schema changes safely across deployments.
+
+### Other Potential Enhancements
+
+| Area | Consideration |
+|------|--------------|
+| Authentication | Spring Security + JWT or OAuth2 for protected endpoints |
+| Pagination | `Pageable` on `GET /api/customers` for large datasets |
+| Search / filter | Query params (`?lastName=Smith`) backed by Spring Data JPA `Specification` |
+| Soft delete | `deletedAt` timestamp on the entity instead of hard deletes |
+| Audit trail | Spring Data Envers or a separate audit log table |
+| E2E tests | Playwright against the running Docker Compose stack |
+| CI pipeline | GitHub Actions: build → test → lint → Docker build on every PR |
+
+---
+
 ## Submission Checklist
 
 - [ ] `docker compose up --build` starts both containers cleanly
