@@ -22,6 +22,7 @@ This document records all AI tool usage during development of the Customer Manag
 **Task delegated:** Diagnosing 403 errors on API calls in the Dockerised stack
 **What was generated:** Identified that `VITE_API_BASE_URL=http://localhost:8080` baked into the frontend build caused the browser to call the backend directly (port 8080), bypassing nginx and triggering CORS rejection. Generated updated `nginx.conf` (with Docker DNS resolver), `docker-compose.yml` (removed build arg), and `Dockerfile` (removed `ARG/ENV`).
 **What I wrote myself / manually fixed:** Identified the proxy pattern to use as the preferred solution; validated the nginx `resolver 127.0.0.11` approach and confirmed it resolved the host-not-found startup error. Directed the fix toward using relative URLs + nginx proxy rather than configuring CORS on the backend.
+**How I validated it:** Ran `docker compose up --build` end-to-end and confirmed API calls from the browser routed correctly through nginx to the backend with no 403 errors. Verified that removing `VITE_API_BASE_URL` from the build args did not break local Vite dev (the Vite proxy handles that path independently).
 **AI mistakes corrected:** Initial nginx config used a hard-coded `proxy_pass http://backend:8080` without a `resolver` directive, causing nginx to fail at startup with "host not found in upstream". I caught this and directed the correction.
 **Time estimate:** ~5 min with AI assistance vs ~20–30 min without (diagnosing Docker networking + nginx config).
 
@@ -33,6 +34,7 @@ This document records all AI tool usage during development of the Customer Manag
 **Task delegated:** Adding Node 24 version constraint and `.nvmrc`
 **What was generated:** `frontend/.nvmrc` pinned to `24.11.0`, `engines` field added to `package.json`.
 **What I wrote myself / manually fixed:** Directed the change — AI scaffolded the project using `node:20-alpine` in the Dockerfile and made no attempt to align with the Node version I was actually running locally (24.11.0). I identified this inconsistency and requested the correction.
+**How I validated it:** Confirmed `node --version` matched the pinned version after `nvm use`. Verified `docker compose build` completed successfully with the `node:24-alpine` base image and that `npm run build` inside the container produced a clean output.
 **AI mistakes corrected:** AI initially scaffolded the Dockerfile with `node:20-alpine` and left it there even after adding the `.nvmrc`. I updated it to `node:24-alpine` to keep the Docker build consistent with the pinned local version — Node 24 is LTS.
 **Time estimate:** <1 min.
 
