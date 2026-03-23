@@ -14,10 +14,11 @@ This phase runs all quality gates to confirm the application is submission-ready
   2. `GET customers by id returns 400 with standard envelope for invalid path variable` — `ex.requiredType?.simpleName` returned primitive `"long"` instead of `"Long"`; fixed by capitalizing the first char.
   Both ktlintCheck and all 12 tests now pass. -->
 
-- [ ] Run frontend lint and test suite from the `frontend/` directory:
+- [x] Run frontend lint and test suite from the `frontend/` directory:
   - `cd frontend && npm run lint` — must produce zero errors
   - `cd frontend && npm run test -- --run` — all tests must pass (expect 23 tests)
   - Report pass/fail counts and any failures with their output
+  <!-- RESULT: `npm run lint` — zero violations (clean exit). `npm run test -- --run` — 4 test files, 23 tests, 0 failed (23 passing). Duration ~3.6s. -->
 
 - [ ] Build and start the full Docker Compose stack, then verify both services are healthy:
   - Run `docker compose up --build -d` from the project root
