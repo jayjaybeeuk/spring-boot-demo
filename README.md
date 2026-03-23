@@ -21,9 +21,9 @@ That's it — no local JVM, Node, or database setup required. Everything runs in
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3001 |
+| Service     | URL                                 |
+| ----------- | ----------------------------------- |
+| Frontend    | http://localhost:3001               |
 | Backend API | http://localhost:8080/api/customers |
 
 To stop:
@@ -107,6 +107,7 @@ npm run lint
 Create a new customer.
 
 **Request body:**
+
 ```json
 {
   "firstName": "Jane",
@@ -116,6 +117,7 @@ Create a new customer.
 ```
 
 **201 Created:**
+
 ```json
 {
   "id": 1,
@@ -127,6 +129,7 @@ Create a new customer.
 ```
 
 **400 Bad Request** (validation failure):
+
 ```json
 {
   "errors": [
@@ -149,6 +152,7 @@ Retrieve a single customer by ID.
 **200 OK:** Single customer object.
 
 **404 Not Found:**
+
 ```json
 {
   "errors": [{ "field": "id", "message": "not found" }]
@@ -160,21 +164,21 @@ Retrieve a single customer by ID.
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       Docker Compose                        │
-│                                                             │
-│   ┌──────────────────┐         ┌──────────────────────┐    │
-│   │   frontend        │  HTTP   │   backend             │   │
-│   │   React 19 / TS   │────────▶│   Spring Boot 3.x     │   │
-│   │   Vite / Nginx    │  :8080  │   Kotlin              │   │
-│   │   port: 3001      │         │   port: 8080          │   │
-│   └──────────────────┘         └──────────┬───────────┘    │
-│                                            │                │
-│                                    ┌───────▼───────┐        │
-│                                    │  H2 In-Memory  │        │
-│                                    │  (embedded)    │        │
-│                                    └───────────────┘        │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                       Docker Compose                      │
+│                                                           │
+│   ┌──────────────────┐         ┌──────────────────────┐   │
+│   │   frontend       │  HTTP   │   backend            │   │
+│   │   React 19 / TS  │────────▶│   Spring Boot 3.x    │   │
+│   │   Vite / Nginx   │  :8080  │   Kotlin             │   │
+│   │   port: 3001     │         │   port: 8080         │   │
+│   └──────────────────┘         └───────────┬──────────┘   │
+│                                            │              │
+│                                    ┌───────▼───────┐      │
+│                                    │  H2 In-Memory │      │
+│                                    │  (embedded)   │      │
+│                                    └───────────────┘      │
+└───────────────────────────────────────────────────────────┘
 ```
 
 Three-tier architecture — presentation, business logic, and data — containerised with Docker Compose.
@@ -187,16 +191,16 @@ Three-tier architecture — presentation, business logic, and data — container
 
 ## Key Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| Kotlin over Java | Brief preference; concise data classes and null-safety reduce boilerplate |
-| Gradle Kotlin DSL | Consistent language across build and application code |
-| H2 in-memory (no file-based) | Brief requirement; keeps state ephemeral, zero setup |
-| No separate DB container | H2 is embedded in the JVM process — a Postgres container would exceed scope |
-| Nginx reverse proxy for `/api/` | Avoids browser CORS issues in the containerised setup |
-| shadcn/ui + Tailwind | Accessible, unstyled-by-default components with utility-first styling |
-| TanStack Query (React Query) | Handles server state, caching, and cache invalidation cleanly |
-| State in hooks, not components | Components are pure presentational; all server state lives in `src/hooks/` |
+| Decision                           | Rationale                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| Kotlin over Java                   | Brief preference; concise data classes and null-safety reduce boilerplate                  |
+| Gradle Kotlin DSL                  | Consistent language across build and application code                                      |
+| H2 in-memory (no file-based)       | Brief requirement; keeps state ephemeral, zero setup                                       |
+| No separate DB container           | H2 is embedded in the JVM process — a Postgres container would exceed scope                |
+| Nginx reverse proxy for `/api/`    | Avoids browser CORS issues in the containerised setup                                      |
+| shadcn/ui + Tailwind               | Accessible, unstyled-by-default components with utility-first styling                      |
+| TanStack Query (React Query)       | Handles server state, caching, and cache invalidation cleanly                              |
+| State in hooks, not components     | Components are pure presentational; all server state lives in `src/hooks/`                 |
 | Date of birth validated as `@Past` | A customer must have been born in the past — sensible assumption where the brief is silent |
 
 ---
@@ -276,6 +280,7 @@ The application uses H2 in-memory storage to keep the scope self-contained. Swap
 **To switch to PostgreSQL:**
 
 1. Replace the H2 dependency in `backend/build.gradle.kts`:
+
 ```kotlin
 // Remove:
 runtimeOnly("com.h2database:h2")
@@ -285,6 +290,7 @@ runtimeOnly("org.postgresql:postgresql")
 ```
 
 2. Update `application.yml`:
+
 ```yaml
 spring:
   datasource:
@@ -297,6 +303,7 @@ spring:
 ```
 
 3. Add a `db` service to `docker-compose.yml`:
+
 ```yaml
 db:
   image: postgres:16-alpine
@@ -312,15 +319,15 @@ For production, replace `ddl-auto: validate` with a migration tool such as **Fly
 
 ### Other Potential Enhancements
 
-| Area | Consideration |
-|------|--------------|
-| Authentication | Spring Security + JWT or OAuth2 for protected endpoints |
-| Pagination | `Pageable` on `GET /api/customers` for large datasets |
+| Area            | Consideration                                                              |
+| --------------- | -------------------------------------------------------------------------- |
+| Authentication  | Spring Security + JWT or OAuth2 for protected endpoints                    |
+| Pagination      | `Pageable` on `GET /api/customers` for large datasets                      |
 | Search / filter | Query params (`?lastName=Smith`) backed by Spring Data JPA `Specification` |
-| Soft delete | `deletedAt` timestamp on the entity instead of hard deletes |
-| Audit trail | Spring Data Envers or a separate audit log table |
-| E2E tests | Playwright against the running Docker Compose stack |
-| CI pipeline | GitHub Actions: build → test → lint → Docker build on every PR |
+| Soft delete     | `deletedAt` timestamp on the entity instead of hard deletes                |
+| Audit trail     | Spring Data Envers or a separate audit log table                           |
+| E2E tests       | Playwright against the running Docker Compose stack                        |
+| CI pipeline     | GitHub Actions: build → test → lint → Docker build on every PR             |
 
 ---
 
