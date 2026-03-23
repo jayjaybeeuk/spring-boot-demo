@@ -29,7 +29,8 @@ This phase runs all quality gates to confirm the application is submission-ready
   - Report the health status and curl output for both services
   <!-- RESULT: Both images built successfully. `docker compose ps` showed `customer-api` (healthy) and `customer-ui` (Up). Frontend: `curl -sf http://localhost:3001 | head -5` returned `<!doctype html><html lang="en">...` — clean HTML response. Backend: `curl -sf http://localhost:8080/api/customers` returned `[]` — empty array, 200 OK. `docker compose down` completed cleanly. -->
 
-- [ ] Verify the submission checklist items that require manual confirmation and report their status:
+- [x] Verify the submission checklist items that require manual confirmation and report their status:
   - Read `README.md` and confirm the checklist section lists the correct port (3001) and test commands
   - Read `AI_USAGE.md` and confirm it is non-empty and describes actual AI tool usage
   - Report any discrepancies found between the documented state and the actual project
+  <!-- RESULT: README.md — correct. Frontend port `http://localhost:3001` documented in the Running section. All test commands present: `./gradlew test`, `./gradlew ktlintCheck`, `npm run test`, `npm run lint`. Submission checklist section present (unchecked boxes are expected — they're for manual submitter confirmation). AI_USAGE.md — non-empty (102 lines). Covers: Docker/nginx proxy fix (Claude Code Sonnet 4.6), Node version pinning (Claude Code Sonnet 4.6), planning & architecture (Claude via Anthropic Cowork), and codebase audit & remediation tracking (Codex/GPT-5). Includes time breakdown table and reflections. No discrepancies found between documented state and actual project. All Phase 01 tasks complete — the project is submission-ready. -->
