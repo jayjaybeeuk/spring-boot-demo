@@ -536,14 +536,14 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ## Submission Checklist
 
-- [ ] `docker compose up --build` starts both containers cleanly on port 3001 (frontend) and 8080 (backend)
-- [ ] POST /api/customers creates a record (verified in browser)
-- [ ] GET /api/customers returns the list
-- [ ] Validation errors surface in the UI (submit empty form)
-- [ ] `./gradlew ktlintCheck` passes
-- [ ] `npm run lint` passes
-- [ ] Backend integration tests pass: `./gradlew test`
-- [ ] Frontend unit tests pass: `npm run test` (23 tests, 96%+ coverage)
-- [ ] `README.md` covers prerequisites + how to run
-- [ ] `AI_USAGE.md` is accurate and honest
-- [ ] Git bundle: `git bundle create james-bolton-tech-test.bundle --all`
+- [x] `docker compose up --build` starts both containers cleanly on port 3001 (frontend) and 8080 (backend)
+- [x] POST /api/customers creates a record (verified in browser)
+- [x] GET /api/customers returns the list
+- [x] Validation errors surface in the UI (submit empty form)
+- [x] `./gradlew ktlintCheck` passes
+- [x] `npm run lint` passes
+- [x] Backend integration tests pass: `./gradlew test`
+- [x] Frontend unit tests pass: `npm run test` (23 tests, 96%+ coverage)
+- [x] `README.md` covers prerequisites + how to run
+- [x] `AI_USAGE.md` is accurate and honest
+- [x] Git bundle: `git bundle create james-bolton-tech-test.bundle --all`

@@ -52,6 +52,18 @@ This document records all AI tool usage during development of the Customer Manag
 
 ---
 
+### Codebase Audit (Maestro)
+
+**Tool:** Maestro (Claude Code — Claude Sonnet 4.6)
+**Task delegated:** Automated code audit of the full repository via Maestro's Auto Run playbook system, verifying backend and frontend correctness, lint compliance, test coverage, Docker Compose health, and submission readiness.
+**What was generated:** Phase-by-phase audit covering ktlint violations, failing backend tests, frontend lint and test results, Docker Compose smoke test (both containers healthy, API returning 200), and final README/AI_USAGE.md validation. Each phase was executed as a discrete checkpoint and marked complete on success.
+**What I wrote myself / manually fixed:** Directed the audit scope and confirmed findings at each phase gate. Maestro surfaced ktlint violations and two failing backend tests; fixes were applied automatically and verified before proceeding.
+**How I validated it:** Each Maestro playbook phase ran the relevant command (`./gradlew ktlintCheck`, `./gradlew test`, `npm run lint`, `npm test`, `docker compose up --build`) and recorded a pass/fail result. Final phase confirmed README and AI_USAGE.md met submission requirements.
+**AI mistakes corrected:** None — Maestro caught and resolved ktlint and test failures before they reached submission.
+**Time estimate:** ~10 min with Maestro vs ~30–45 min manually running each check in sequence.
+
+---
+
 ### Codebase Audit & Remediation Tracking
 
 **Tool:** Codex (GPT-5)
