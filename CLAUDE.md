@@ -1,6 +1,6 @@
 # CLAUDE.md — Customer Management Application
 
-Architecture and coding standards for the Allica Bank Senior+ Full Stack Technical Test.
+Architecture and coding standards for the Senior+ Full Stack Technical Test.
 All decisions here supersede generic defaults. Read this before touching any file.
 
 > Agent orchestration: see [agents.md](agents.md)
@@ -40,7 +40,7 @@ customer records. Frontend provides a form and list view. Everything runs via Do
 ## Repository Structure
 
 ```
-Allica-tech/
+customer-management/
 ├── docker-compose.yml
 ├── README.md
 ├── AI_USAGE.md

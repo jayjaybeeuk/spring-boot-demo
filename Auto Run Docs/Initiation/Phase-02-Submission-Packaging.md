@@ -1,6 +1,6 @@
 # Phase 02: Submission Packaging
 
-This phase produces the final submission artefact — a Git bundle containing the complete repository history — and confirms every item on the CLAUDE.md submission checklist is ticked. By the end of this phase the project is ready to send to the Allica Bank hiring team.
+This phase produces the final submission artefact — a Git bundle containing the complete repository history — and confirms every item on the CLAUDE.md submission checklist is ticked. By the end of this phase the project is ready to send to the hiring team.
 
 ## Tasks
 

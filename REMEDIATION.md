@@ -38,8 +38,8 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: The documented error envelope is only enforced for bean validation and not-found cases. Malformed JSON, invalid `LocalDate` values, missing bodies, and similar request failures are likely to return Spring's default error format instead.
 - Evidence:
-  - [GlobalExceptionHandler.kt](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/backend/src/main/kotlin/com/example/customers/exception/GlobalExceptionHandler.kt#L11)
-  - [README.md](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/README.md#L129)
+  - [GlobalExceptionHandler.kt](backend/src/main/kotlin/com/example/customers/exception/GlobalExceptionHandler.kt#L11)
+  - [README.md](README.md#L129)
 - Remediation:
   - Add explicit handlers for request parsing/binding failures.
   - Keep all client-visible API errors inside the existing `ErrorResponse` envelope.
@@ -54,8 +54,8 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: The frontend accepts values the backend rejects. Names use `.min(1)` rather than trimming blank input, and date validation is based on `new Date(...) < new Date()` rather than a clear date-only rule.
 - Evidence:
-  - [CustomerForm.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/CustomerForm.tsx#L12)
-  - [CreateCustomerRequest.kt](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/backend/src/main/kotlin/com/example/customers/dto/CreateCustomerRequest.kt#L8)
+  - [CustomerForm.tsx](frontend/src/components/CustomerForm.tsx#L12)
+  - [CreateCustomerRequest.kt](backend/src/main/kotlin/com/example/customers/dto/CreateCustomerRequest.kt#L8)
 - Remediation:
   - Trim or reject whitespace-only names on the client.
   - Validate date-of-birth with the same date semantics as the backend.
@@ -71,8 +71,8 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: Non-400 failures during customer creation do not surface a useful message to the user. The current behavior leaves the form interactive again without explaining what failed.
 - Evidence:
-  - [CustomerForm.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/CustomerForm.tsx#L41)
-  - [CustomerForm.test.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/test/CustomerForm.test.tsx#L86)
+  - [CustomerForm.tsx](frontend/src/components/CustomerForm.tsx#L41)
+  - [CustomerForm.test.tsx](frontend/src/test/CustomerForm.test.tsx#L86)
 - Remediation:
   - Add a form-level error state for 5xx and network failures.
   - Preserve field-level mapping for validation errors.
@@ -88,7 +88,7 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: `npm run lint` currently fails because `button.tsx` exports a component and non-component symbol from the same file.
 - Evidence:
-  - [button.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/ui/button.tsx#L53)
+  - [button.tsx](frontend/src/components/ui/button.tsx#L53)
 - Remediation:
   - Split `buttonVariants` into a separate module or adjust the file structure so the current ESLint rules pass cleanly.
   - Re-run frontend lint after the change.
@@ -102,10 +102,10 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: The documented runtime path does not match the current project configuration. Docker exposes the frontend on port 3001, while the README says 3000. The README also says Node 20+ while the frontend is pinned to Node 24.
 - Evidence:
-  - [docker-compose.yml](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/docker-compose.yml#L21)
-  - [README.md](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/README.md#L24)
-  - [package.json](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/package.json#L6)
-  - [frontend/.nvmrc](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/.nvmrc#L1)
+  - [docker-compose.yml](docker-compose.yml#L21)
+  - [README.md](README.md#L24)
+  - [package.json](frontend/package.json#L6)
+  - [frontend/.nvmrc](frontend/.nvmrc#L1)
 - Remediation:
   - Update README port and version guidance to match the actual build/runtime config.
   - Check any other root or frontend docs for stale setup instructions.
@@ -120,8 +120,8 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: `findAll()` returns customers with no explicit sort order, so the UI may render records in a database-dependent order.
 - Evidence:
-  - [CustomerService.kt](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/backend/src/main/kotlin/com/example/customers/service/CustomerService.kt#L21)
-  - [CustomerList.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/components/CustomerList.tsx#L23)
+  - [CustomerService.kt](backend/src/main/kotlin/com/example/customers/service/CustomerService.kt#L21)
+  - [CustomerList.tsx](frontend/src/components/CustomerList.tsx#L23)
 - Remediation:
   - Choose a product rule such as newest-first or oldest-first.
   - Apply explicit ordering at the repository/service layer.
@@ -136,9 +136,9 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: The repo still contains stock or unused material, which increases maintenance noise and weakens the presentation quality of the test submission.
 - Evidence:
-  - [frontend/README.md](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/README.md#L1)
-  - [App.css](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/App.css#L1)
-  - [customerApi.ts](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/api/customerApi.ts#L6)
+  - [frontend/README.md](frontend/README.md#L1)
+  - [App.css](frontend/src/App.css#L1)
+  - [customerApi.ts](frontend/src/api/customerApi.ts#L6)
 - Remediation:
   - Remove or replace template documentation.
   - Delete unused files and exported code that are not part of the application.
@@ -154,7 +154,7 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: Backend tests cover the main happy path and a few validation cases, but they do not lock down parsing failures or a successful `GET /api/customers/{id}`.
 - Evidence:
-  - [CustomerControllerTest.kt](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/backend/src/test/kotlin/com/example/customers/CustomerControllerTest.kt#L18)
+  - [CustomerControllerTest.kt](backend/src/test/kotlin/com/example/customers/CustomerControllerTest.kt#L18)
 - Remediation:
   - Add tests for invalid date parsing, malformed JSON, missing bodies, and successful single-customer retrieval.
   - Add assertions for the exact error envelope where relevant.
@@ -171,8 +171,8 @@ All items resolved. No open backlog remaining.
 - Status: `Fixed`
 - Problem: Frontend tests do not currently cover whitespace-only names, same-day DOB edge cases, or a user-visible generic submit failure state.
 - Evidence:
-  - [CustomerForm.test.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/test/CustomerForm.test.tsx#L16)
-  - [CustomerList.test.tsx](/Users/jamesbolton/Documents/GIT/Personal/Allica-tech/frontend/src/test/CustomerList.test.tsx#L15)
+  - [CustomerForm.test.tsx](frontend/src/test/CustomerForm.test.tsx#L16)
+  - [CustomerList.test.tsx](frontend/src/test/CustomerList.test.tsx#L15)
 - Remediation:
   - Add validation edge-case tests for the form.
   - Add tests that prove generic create errors are surfaced clearly.

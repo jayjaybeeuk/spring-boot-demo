@@ -1,6 +1,6 @@
 # Customer Management Application
 
-A full-stack customer management application built for the Allica Bank Senior+ Full Stack Technical Test.
+A full-stack customer management application demonstrating a Spring Boot + React architecture with Docker Compose deployment.
 
 ---
 
