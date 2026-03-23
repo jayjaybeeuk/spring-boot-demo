@@ -20,13 +20,14 @@ This phase runs all quality gates to confirm the application is submission-ready
   - Report pass/fail counts and any failures with their output
   <!-- RESULT: `npm run lint` — zero violations (clean exit). `npm run test -- --run` — 4 test files, 23 tests, 0 failed (23 passing). Duration ~3.6s. -->
 
-- [ ] Build and start the full Docker Compose stack, then verify both services are healthy:
+- [x] Build and start the full Docker Compose stack, then verify both services are healthy:
   - Run `docker compose up --build -d` from the project root
   - Poll `docker compose ps` until both `frontend` and `backend` containers show `healthy` (backend health check has a 30 s start period and 15 s interval — allow up to 90 s)
   - Confirm frontend is reachable: `curl -sf http://localhost:3001 | head -5`
   - Confirm backend API is reachable: `curl -sf http://localhost:8080/api/customers`
   - Run `docker compose down` to clean up
   - Report the health status and curl output for both services
+  <!-- RESULT: Both images built successfully. `docker compose ps` showed `customer-api` (healthy) and `customer-ui` (Up). Frontend: `curl -sf http://localhost:3001 | head -5` returned `<!doctype html><html lang="en">...` — clean HTML response. Backend: `curl -sf http://localhost:8080/api/customers` returned `[]` — empty array, 200 OK. `docker compose down` completed cleanly. -->
 
 - [ ] Verify the submission checklist items that require manual confirmation and report their status:
   - Read `README.md` and confirm the checklist section lists the correct port (3001) and test commands
