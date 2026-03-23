@@ -8,7 +8,9 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 
 @Service
-class CustomerService(private val customerRepository: CustomerRepository) {
+class CustomerService(
+    private val customerRepository: CustomerRepository,
+) {
     fun create(request: CreateCustomerRequest): CustomerResponse {
         val customer =
             Customer(
@@ -19,8 +21,7 @@ class CustomerService(private val customerRepository: CustomerRepository) {
         return customerRepository.save(customer).toResponse()
     }
 
-    fun getAll(): List<CustomerResponse> =
-        customerRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).map { it.toResponse() }
+    fun getAll(): List<CustomerResponse> = customerRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).map { it.toResponse() }
 
     fun getById(id: Long): CustomerResponse =
         customerRepository
