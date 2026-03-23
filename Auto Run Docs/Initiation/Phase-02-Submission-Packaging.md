@@ -4,13 +4,13 @@ This phase produces the final submission artefact — a Git bundle containing th
 
 ## Tasks
 
-- [ ] Audit the submission checklist in `CLAUDE.md` against the actual project state and fix any gaps:
+- [x] Audit the submission checklist in `CLAUDE.md` against the actual project state and fix any gaps:
   - Read the checklist block in `CLAUDE.md` (under "Submission Checklist")
   - For each unchecked item, determine whether it is actually complete and mark it `[x]` if so
   - If any item is genuinely incomplete, fix it before continuing (e.g. a missing section in `AI_USAGE.md`, an outdated port reference in `README.md`)
   - Commit any checklist or documentation fixes with message: `docs: finalise submission checklist`
 
-- [ ] Create the Git bundle for submission:
+- [x] Create the Git bundle for submission:
   - Run from the project root: `git bundle create james-bolton-tech-test.bundle --all`
   - Verify the bundle is valid: `git bundle verify james-bolton-tech-test.bundle`
   - Report the bundle file size and the list of refs it contains
